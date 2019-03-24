@@ -1,0 +1,8 @@
+db:
+  mongodb:
+    protocol: "mongodb://"
+    host: "localhost"
+    port: "27017"
+    database: "example"
+    username:
+    password:
