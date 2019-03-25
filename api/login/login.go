@@ -3,7 +3,6 @@ package login
 import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Auth struct {
@@ -13,22 +12,21 @@ type Auth struct {
 }
 
 type Authentication struct {
-	client *mongo.Client
-	ctx    context.Context
+	db DBer
 }
 
-func NewAuthentication(ctx context.Context, client *mongo.Client) Authentication {
+func NewAuthentication(db DBer) Authentication {
 	return Authentication{
-		client: client, ctx: ctx,
+		db: db,
 	}
 }
 
-func (a Authentication) CheckLogin(auth Auth) (bool, error) {
-	collection := a.client.Database("example").Collection("auth")
+func (a Authentication) CheckLogin(ctx context.Context, auth Auth) (bool, error) {
 	filter := bson.D{{"username", auth.Username}}
 	var r Auth
 
-	err := collection.FindOne(a.ctx, filter).Decode(&r)
+	err := a.db.GetOne(ctx, "auth", filter, &r)
+
 	if err != nil {
 		return false, err
 	}

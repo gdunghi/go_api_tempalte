@@ -5,12 +5,18 @@ import (
 	"github.com/labstack/echo"
 	md "github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go_api_tempalte/api/login"
 	"net/http"
 )
 
-func InitRouter(ctx context.Context, mc *mongo.Client) *echo.Echo {
+type DBer interface {
+	GetAll(collection string, selector interface{}, sort string, v interface{}) error
+	GetOne(ctx context.Context, collection string, selector interface{}, v interface{}) error
+	Insert(collection string, v interface{}) error
+	Upsert(collection string, selector interface{}, v interface{}) error
+}
+
+func InitRouter(db DBer) *echo.Echo {
 	e := echo.New()
 	e.Pre(md.RemoveTrailingSlash())
 	e.Logger.SetLevel(log.INFO)
@@ -39,7 +45,7 @@ func InitRouter(ctx context.Context, mc *mongo.Client) *echo.Echo {
 		}),
 	)
 
-	a := login.NewHandler(ctx, mc, login.NewAuthentication(ctx, mc))
+	a := login.NewHandler(db, login.NewAuthentication(db))
 
 	e.POST("/login", a.Auth)
 

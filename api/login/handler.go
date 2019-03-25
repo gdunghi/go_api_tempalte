@@ -4,7 +4,6 @@ import "C"
 import (
 	"context"
 	"github.com/labstack/echo"
-	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 )
 
@@ -13,32 +12,43 @@ type Login struct {
 	Password string `json:"password"`
 }
 
+type DBer interface {
+	GetAll(collection string, selector interface{}, sort string, v interface{}) error
+	GetOne(ctx context.Context, collection string, selector interface{}, v interface{}) error
+	Insert(collection string, v interface{}) error
+	Upsert(collection string, selector interface{}, v interface{}) error
+}
+
 type Authenticationer interface {
-	CheckLogin(auth Auth) (bool, error)
+	CheckLogin(ctx context.Context, auth Auth) (bool, error)
 }
 
 //Handler ...
 type Handler struct {
-	client *mongo.Client
-	ctx    context.Context
-	auth   Authenticationer
+	db   DBer
+	auth Authenticationer
 }
 
-func NewHandler(ctx context.Context, client *mongo.Client, auth Authenticationer) *Handler {
+func NewHandler(db DBer, auth Authenticationer) *Handler {
 	return &Handler{
-		client: client,
-		ctx:    ctx,
-		auth:   auth,
+		db:   db,
+		auth: auth,
 	}
 }
 
 func (h *Handler) Auth(c echo.Context) error {
 	l := new(Login)
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	if err := c.Bind(l); err != nil {
 		return c.String(http.StatusBadRequest, "")
 	}
 
-	r, err := h.auth.CheckLogin(Auth{l.Username, l.Password})
+	r, err := h.auth.CheckLogin(ctx, Auth{l.Username, l.Password})
 
 	if err != nil {
 		return c.String(http.StatusBadRequest, "")

@@ -37,8 +37,8 @@ func init() {
 
 func main() {
 	ctx := context.Background()
-	mdb := db.NewMongoDB(ctx)
-	e := route.InitRouter(ctx, mdb.Client)
+	db := db.NewMongoDB()
+	e := route.InitRouter(db)
 
 	// Start server
 	s := &http.Server{
